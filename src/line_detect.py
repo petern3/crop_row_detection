@@ -11,20 +11,29 @@ import math
 ### Setup ###
 image_data_path = os.path.abspath('../CRBD/Images')
 gt_data_path = os.path.abspath('../CRBD/GT data')
+image_out_path = os.path.abspath('../img')
 
-NUMBER_OF_STRIPS = 10
-SUM_THRESH = 5
-DIFF_NOISE_THRESH = 4
+NUMBER_OF_STRIPS = 10             # How many strips the image is split into
+SUM_THRESH = 5                    # How much green in a strip before it's a plant
+DIFF_NOISE_THRESH = 4             # How close can two sections be?
 
+HOUGH_RHO = 8                     # Distance resolution of the accumulator in pixels
+HOUGH_ANGLE = math.pi/180         # Angle resolution of the accumulator in radians
+HOUGH_THRESH = 8                  # Accumulator threshold parameter. Only those lines are returned that get enough votes
+
+ANGLE_THRESH = math.pi*(30.0/180) # How steep angles the crop rows can be in radians
+
+
+use_camera = False
+#view_all_steps = False
 save_images = False
 strip_to_save = 3
-display_images = True
+timing = False
 
 
 def main():
-    sample_input = raw_input('Shall I use the sample images? (y or n) ')
     
-    if sample_input == 'y':
+    if use_camera == False:
         
         diff_times = []
         
@@ -37,28 +46,29 @@ def main():
             image_in = cv2.imread(image_path)
             crop_lines = crop_row_detect(image_in)
             
-            if display_images == True:
+            if timing == False:
                 cv2.destroyAllWindows()
                 #print(crop_lines)
                 cv2.imshow(image_name, cv2.addWeighted(image_in, 1, crop_lines, 1, 0.0))
                 #cv2.imshow(image_name, image_in)
                 #cv2.imshow("detected lines", crop_lines)
                 
-            
-            ### Timing ###
-            diff_times.append(time.time() - start_time)
-            mean = 0
-            for diff_time in diff_times:
-                mean += diff_time
-            
-            #if display_images == True:
-            #    print('elapsed time = {0}'.format(diff_times[-1]))
-            #    print('average time = {0}'.format(1.0 * mean / len(diff_times)))
-            
-            if display_images == True:
                 print('Press any key to continue...')
                 while cv2.waitKey(1) < 0:
                     pass
+                
+            
+            ### Timing ###
+            else:
+                diff_times.append(time.time() - start_time)
+                mean = 0
+                for diff_time in diff_times:
+                    mean += diff_time
+                
+                #if timing == True:
+                #    print('elapsed time = {0}'.format(diff_times[-1]))
+                #    print('average time = {0}'.format(1.0 * mean / len(diff_times)))
+            
                     
         ### Display Timing ###
         print('max time = {0}'.format(max(diff_times)))
@@ -95,17 +105,18 @@ def crop_row_detect(image_in):
     
     ### Stripping ###
     crop_points = strip_process(image_edit)
-    save_image('6_crop_points.jpg', crop_points)
+    save_image('8_crop_points.jpg', crop_points)
     
     ### Hough Transform ###
     crop_lines = crop_point_hough(crop_points)
+    save_image('9_image_hough.jpg', cv2.addWeighted(image_in, 1, crop_lines, 1, 0.0))
     
     return crop_lines
     
     
 def save_image(image_name, image_data):
     if save_images == True:
-        cv2.imwrite(image_name, image_data)
+        cv2.imwrite(os.path.join(image_out_path, image_name), image_data)
 
    
 def grayscale_transform(image_in):
@@ -173,8 +184,8 @@ def strip_process(image_edit):
         crop_points[(strip_number*strip_height), :] = v_mid
         crop_points *= 255
         
-        image_edit[(strip_number*strip_height):((strip_number+1)*strip_height-1), :] = image_strip
-            
+        #image_edit[(strip_number*strip_height):((strip_number+1)*strip_height-1), :] = image_strip
+        
     return crop_points
 
 
@@ -184,7 +195,7 @@ def crop_point_hough(crop_points):
     width = len(crop_points[0])
     
     #crop_line_data = cv2.HoughLinesP(crop_points, 1, math.pi/180, 2, 10, 10)
-    crop_line_data = cv2.HoughLines(crop_points, 8, math.pi/180, 8)
+    crop_line_data = cv2.HoughLines(crop_points, HOUGH_RHO, HOUGH_ANGLE, HOUGH_THRESH)
     
     crop_lines = np.zeros((height, width, 3), dtype=np.uint8)
     
@@ -195,7 +206,7 @@ def crop_point_hough(crop_points):
         if len(crop_line_data[0]) == 2:
             for [rho, theta] in crop_line_data:
                 #print(rho, theta)
-                if theta <= 0.5236 or theta >= 2.6177:
+                if (theta <= ANGLE_THRESH) or (theta >= math.pi-ANGLE_THRESH):
                     a = math.cos(theta)
                     b = math.sin(theta)
                     x0 = a*rho
