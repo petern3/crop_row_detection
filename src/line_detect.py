@@ -14,12 +14,12 @@ gt_data_path = os.path.abspath('../CRBD/GT data')
 image_out_path = os.path.abspath('../img')
 
 NUMBER_OF_STRIPS = 10             # How many strips the image is split into
-SUM_THRESH = 5                    # How much green in a strip before it's a plant
-DIFF_NOISE_THRESH = 4             # How close can two sections be?
+SUM_THRESH = 2                    # How much green in a strip before it's a plant
+DIFF_NOISE_THRESH = 8             # How close can two sections be?
 
-HOUGH_RHO = 8                     # Distance resolution of the accumulator in pixels
+HOUGH_RHO = 5                     # Distance resolution of the accumulator in pixels
 HOUGH_ANGLE = math.pi/180         # Angle resolution of the accumulator in radians
-HOUGH_THRESH = 8                  # Accumulator threshold parameter. Only those lines are returned that get enough votes
+HOUGH_THRESH = 6                  # Accumulator threshold parameter. Only those lines are returned that get enough votes
 
 ANGLE_THRESH = math.pi*(30.0/180) # How steep angles the crop rows can be in radians
 
