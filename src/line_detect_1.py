@@ -11,7 +11,7 @@ import math
 ### Setup ###
 image_data_path = os.path.abspath('../CRBD/Images')
 gt_data_path = os.path.abspath('../CRBD/GT data')
-image_out_path = os.path.abspath('../img')
+image_out_path = os.path.abspath('../img/algorithm_1')
 
 NUMBER_OF_STRIPS = 10             # How many strips the image is split into
 SUM_THRESH = 2                    # How much green in a strip before it's a plant
@@ -28,7 +28,7 @@ use_camera = False
 #view_all_steps = False
 save_images = False
 strip_to_save = 3
-timing = False
+timing = True
 
 
 def main():
@@ -201,7 +201,7 @@ def crop_point_hough(crop_points):
     
     if crop_line_data != None:
         crop_line_data = crop_line_data[0]
-        print(crop_line_data)
+        #print(crop_line_data)
         
         if len(crop_line_data[0]) == 2:
             for [rho, theta] in crop_line_data:
