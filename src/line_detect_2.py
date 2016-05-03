@@ -107,8 +107,8 @@ def crop_row_detect(image_in):
     skeleton = skeletonize(image_edit)
     save_image('2_image_skeleton.jpg', skeleton)
     
-    if timing == False:
-        cv2.imshow("skeleton", skeleton)
+    #if timing == False:
+    #    cv2.imshow("skeleton", skeleton)
     
     ### Hough Transform ###
     crop_lines = crop_point_hough(skeleton)
