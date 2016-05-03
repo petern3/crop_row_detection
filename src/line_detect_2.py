@@ -26,7 +26,7 @@ ANGLE_THRESH = math.pi*(30.0/180) # How steep angles the crop rows can be in rad
 
 use_camera = False
 #view_all_steps = False
-save_images = True
+save_images = False
 timing = False
 
 
@@ -100,17 +100,9 @@ def crop_row_detect(image_in):
     image_edit = grayscale_transform(image_in)
     save_image('1_image_gray.jpg', image_edit)
     
-    ### Binarization ###
-    #_, image_edit = cv2.threshold(image_edit, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    #save_image('2_image_bin.jpg', image_edit)
-    
     ### Skeletonization ###
     skeleton = skeletonize(image_edit)
-    save_image('2_image_skeleton.jpg', image_edit)
-    
-    ### Stripping ###
-    #crop_points = strip_process(image_edit)
-    #save_image('8_crop_points.jpg', crop_points)
+    save_image('2_image_skeleton.jpg', skeleton)
     
     ### Hough Transform ###
     crop_lines = crop_point_hough(skeleton)
@@ -147,8 +139,8 @@ def skeletonize(image_in):
         if zeros == size:
             done = True
     
-    if timing == False:
-        cv2.imshow("skel", skel)
+    #if timing == False:
+    #    cv2.imshow("skel", skel)
     
     return skel
 

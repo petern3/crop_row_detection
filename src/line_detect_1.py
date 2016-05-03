@@ -28,7 +28,7 @@ use_camera = False
 #view_all_steps = False
 save_images = False
 strip_to_save = 3
-timing = True
+timing = False
 
 
 def main():
