@@ -14,13 +14,16 @@ gt_data_path = os.path.abspath('../CRBD/GT data')
 image_out_path = os.path.abspath('../img/algorithm_2')
 
 
-HOUGH_RHO = 1                     # Distance resolution of the accumulator in pixels
-HOUGH_ANGLE = math.pi*6.0/180     # Angle resolution of the accumulator in radians
-HOUGH_THRESH_MAX = 60             # Accumulator threshold parameter. Only those lines are returned that get enough votes
+HOUGH_RHO = 2                      # Distance resolution of the accumulator in pixels
+HOUGH_ANGLE = math.pi*4.0/180     # Angle resolution of the accumulator in radians
+HOUGH_THRESH_MAX = 100             # Accumulator threshold parameter. Only those lines are returned that get enough votes
 HOUGH_THRESH_MIN = 10
+HOUGH_THRESH_INCR = 1
 
-NUMBER_OF_ROWS = 4
+NUMBER_OF_ROWS = 3
 
+THETA_SIM_THRESH = math.pi*(6.0/180)   # How similar two rows can be
+RHO_SIM_THRESH = 8   # How similar two rows can be
 ANGLE_THRESH = math.pi*(30.0/180) # How steep angles the crop rows can be in radians
 
 
@@ -104,6 +107,9 @@ def crop_row_detect(image_in):
     skeleton = skeletonize(image_edit)
     save_image('2_image_skeleton.jpg', skeleton)
     
+    if timing == False:
+        cv2.imshow("skeleton", skeleton)
+    
     ### Hough Transform ###
     crop_lines = crop_point_hough(skeleton)
     save_image('3_image_hough.jpg', cv2.addWeighted(image_in, 1, crop_lines, 1, 0.0))
@@ -139,9 +145,6 @@ def skeletonize(image_in):
         if zeros == size:
             done = True
     
-    #if timing == False:
-    #    cv2.imshow("skel", skel)
-    
     return skel
 
 
@@ -161,34 +164,47 @@ def crop_point_hough(crop_points):
         if crop_line_data != None:
             
             # get rid of duplicate lines. May become redundant if a similarity threshold is done
-            crop_line_data = set(tuple_list_round(crop_line_data[0], -1, 4))
+            crop_line_data_1 = tuple_list_round(crop_line_data[0], -1, 4)
+            crop_line_data_2 = []
             
-            faulty_lines = 0
-            
-            for (rho, theta) in crop_line_data:
+            for curr_index in range(len(crop_line_data_1)):
+                (rho, theta) = crop_line_data_1[curr_index]
                 
-                if (theta <= ANGLE_THRESH) or (theta >= math.pi-ANGLE_THRESH):
+                is_faulty = False
+                if ((theta >= ANGLE_THRESH) and (theta <= math.pi-ANGLE_THRESH)) or (theta <= 0.0001):
+                    is_faulty = True
                     
-                    a = math.cos(theta)
-                    b = math.sin(theta)
-                    x0 = a*rho
-                    y0 = b*rho
-                    point1 = (int(round(x0+1000*(-b))), int(round(y0+1000*(a))))
-                    point2 = (int(round(x0-1000*(-b))), int(round(y0-1000*(a))))
-                    cv2.line(crop_lines, point1, point2, (0, 0, 255), 2)
                 else:
-                    faulty_lines += 1
-                #print(rho)
+                    for (other_rho, other_theta) in crop_line_data_1[curr_index+1:]:
+                        if abs(theta - other_theta) < THETA_SIM_THRESH:
+                            is_faulty = True
+                        elif abs(rho - other_rho) < RHO_SIM_THRESH:
+                            is_faulty = True
+                
+                if not is_faulty:
+                    crop_line_data_2.append( (rho, theta) )
+                    
+                
             
-            if (len(crop_line_data) - faulty_lines) >= NUMBER_OF_ROWS:
-                #print("found {0} lines".format(len(crop_line_data) - faulty_lines))
+            for (rho, theta) in crop_line_data_2:
+                
+                a = math.cos(theta)
+                b = math.sin(theta)
+                x0 = a*rho
+                y0 = b*rho
+                point1 = (int(round(x0+1000*(-b))), int(round(y0+1000*(a))))
+                point2 = (int(round(x0-1000*(-b))), int(round(y0-1000*(a))))
+                cv2.line(crop_lines, point1, point2, (0, 0, 255), 2)
+
+            
+            if len(crop_line_data_2) >= NUMBER_OF_ROWS:
                 rows_found = True
             
         
-        hough_thresh -= 1
+        hough_thresh -= HOUGH_THRESH_INCR
     
     if rows_found == False:
-        print(number_of_rows, "rows_not_found")
+        print(NUMBER_OF_ROWS, "rows_not_found")
         
     
     return crop_lines
