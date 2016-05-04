@@ -29,7 +29,7 @@ ANGLE_THRESH = math.pi*(30.0/180) # How steep angles the crop rows can be in rad
 
 use_camera = False
 #view_all_steps = False
-save_images = False
+save_images = True
 timing = False
 
 
@@ -111,8 +111,9 @@ def crop_row_detect(image_in):
     #    cv2.imshow("skeleton", skeleton)
     
     ### Hough Transform ###
-    crop_lines = crop_point_hough(skeleton)
-    save_image('3_image_hough.jpg', cv2.addWeighted(image_in, 1, crop_lines, 1, 0.0))
+    (crop_lines, crop_lines_hough) = crop_point_hough(skeleton)
+    save_image('3_image_hough.jpg', cv2.addWeighted(image_in, 1, crop_lines_hough, 1, 0.0))
+    save_image('4_image_lines.jpg', cv2.addWeighted(image_in, 1, crop_lines, 1, 0.0))
     
     return crop_lines
     
@@ -167,6 +168,21 @@ def crop_point_hough(crop_points):
             crop_line_data_1 = tuple_list_round(crop_line_data[0], -1, 4)
             crop_line_data_2 = []
             
+            if save_images == True:
+                crop_lines_hough = np.zeros((height, width, 3), dtype=np.uint8)
+                for (rho, theta) in crop_line_data_1:
+                    
+                    a = math.cos(theta)
+                    b = math.sin(theta)
+                    x0 = a*rho
+                    y0 = b*rho
+                    point1 = (int(round(x0+1000*(-b))), int(round(y0+1000*(a))))
+                    point2 = (int(round(x0-1000*(-b))), int(round(y0-1000*(a))))
+                    cv2.line(crop_lines_hough, point1, point2, (0, 0, 255), 2)
+                    
+                    
+                
+            
             for curr_index in range(len(crop_line_data_1)):
                 (rho, theta) = crop_line_data_1[curr_index]
                 
@@ -207,7 +223,7 @@ def crop_point_hough(crop_points):
         print(NUMBER_OF_ROWS, "rows_not_found")
         
     
-    return crop_lines
+    return (crop_lines, crop_lines_hough)
     
     
 def tuple_list_round(tuple_list, ndigits_1=0, ndigits_2=0):
