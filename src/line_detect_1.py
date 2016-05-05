@@ -26,8 +26,9 @@ ANGLE_THRESH = math.pi*(30.0/180) # How steep angles the crop rows can be in rad
 
 use_camera = False
 #view_all_steps = False
-save_images = False
+images_to_save = [2, 3, 4, 5]
 strip_to_save = 3
+curr_image = 0
 timing = False
 
 
@@ -38,6 +39,8 @@ def main():
         diff_times = []
         
         for image_name in sorted(os.listdir(image_data_path)):
+            global curr_image
+            curr_image += 1
             
             start_time = time.time()
             
@@ -93,30 +96,32 @@ def main():
 
 def crop_row_detect(image_in):
     
-    save_image('0_image_in.jpg', image_in)
+    save_image('0_image_in', image_in)
     
     ### Grayscale Transform ###
     image_edit = grayscale_transform(image_in)
-    save_image('1_image_gray.jpg', image_edit)
+    save_image('1_image_gray', image_edit)
         
     ### Binarization ###
     _, image_edit = cv2.threshold(image_edit, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    save_image('2_image_bin.jpg', image_edit)
+    save_image('2_image_bin', image_edit)
     
     ### Stripping ###
     crop_points = strip_process(image_edit)
-    save_image('8_crop_points.jpg', crop_points)
+    save_image('8_crop_points', crop_points)
     
     ### Hough Transform ###
     crop_lines = crop_point_hough(crop_points)
-    save_image('9_image_hough.jpg', cv2.addWeighted(image_in, 1, crop_lines, 1, 0.0))
+    save_image('9_image_hough', cv2.addWeighted(image_in, 1, crop_lines, 1, 0.0))
     
     return crop_lines
     
     
 def save_image(image_name, image_data):
-    if save_images == True:
-        cv2.imwrite(os.path.join(image_out_path, image_name), image_data)
+    if curr_image in images_to_save:
+        image_name_new = os.path.join(image_out_path, "{0}_{1}.jpg".format(image_name, str(curr_image) ))
+        
+        cv2.imwrite(image_name_new, image_data)
 
    
 def grayscale_transform(image_in):
@@ -137,7 +142,7 @@ def strip_process(image_edit):
         
         
         if strip_number == strip_to_save:
-            save_image('4_image_strip_4.jpg', image_strip)
+            save_image('4_image_strip_4', image_strip)
         
         v_sum = [0] * width
         v_thresh = [0] * width
@@ -174,12 +179,11 @@ def strip_process(image_edit):
                     diff_end = col_number
                     diff_end_found = True
         
-        if save_images == True:
-            if strip_number == strip_to_save:
-                print(v_sum)
-                print(v_thresh)
-                print(v_diff)
-                print(v_mid)
+        if curr_image in images_to_save and strip_number == strip_to_save:
+            print(v_sum)
+            print(v_thresh)
+            print(v_diff)
+            print(v_mid)
         
         crop_points[(strip_number*strip_height), :] = v_mid
         crop_points *= 255

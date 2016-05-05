@@ -28,9 +28,10 @@ ANGLE_THRESH = math.pi*(30.0/180) # How steep angles the crop rows can be in rad
 
 
 use_camera = False
-#view_all_steps = False
-save_images = True
+images_to_save = [2,3,4,5]  #-1 for no images
+curr_image = 0
 timing = False
+
 
 
 def main():
@@ -40,6 +41,8 @@ def main():
         diff_times = []
         
         for image_name in sorted(os.listdir(image_data_path)):
+            global curr_image
+            curr_image += 1
             
             start_time = time.time()
             
@@ -97,30 +100,32 @@ def main():
 
 def crop_row_detect(image_in):
     
-    save_image('0_image_in.jpg', image_in)
+    save_image('0_image_in', image_in)
     
     ### Grayscale Transform ###
     image_edit = grayscale_transform(image_in)
-    save_image('1_image_gray.jpg', image_edit)
+    save_image('1_image_gray', image_edit)
     
     ### Skeletonization ###
     skeleton = skeletonize(image_edit)
-    save_image('2_image_skeleton.jpg', skeleton)
+    save_image('2_image_skeleton', skeleton)
     
     #if timing == False:
     #    cv2.imshow("skeleton", skeleton)
     
     ### Hough Transform ###
     (crop_lines, crop_lines_hough) = crop_point_hough(skeleton)
-    save_image('3_image_hough.jpg', cv2.addWeighted(image_in, 1, crop_lines_hough, 1, 0.0))
-    save_image('4_image_lines.jpg', cv2.addWeighted(image_in, 1, crop_lines, 1, 0.0))
+    save_image('3_image_hough', cv2.addWeighted(image_in, 1, crop_lines_hough, 1, 0.0))
+    save_image('4_image_lines', cv2.addWeighted(image_in, 1, crop_lines, 1, 0.0))
     
     return crop_lines
     
     
 def save_image(image_name, image_data):
-    if save_images == True:
-        cv2.imwrite(os.path.join(image_out_path, image_name), image_data)
+    if curr_image in images_to_save:
+        image_name_new = os.path.join(image_out_path, "{0}_{1}.jpg".format(image_name, str(curr_image) ))
+        
+        cv2.imwrite(image_name_new, image_data)
 
    
 def grayscale_transform(image_in):
@@ -168,17 +173,16 @@ def crop_point_hough(crop_points):
             crop_line_data_1 = tuple_list_round(crop_line_data[0], -1, 4)
             crop_line_data_2 = []
             
-            if save_images == True:
-                crop_lines_hough = np.zeros((height, width, 3), dtype=np.uint8)
-                for (rho, theta) in crop_line_data_1:
-                    
-                    a = math.cos(theta)
-                    b = math.sin(theta)
-                    x0 = a*rho
-                    y0 = b*rho
-                    point1 = (int(round(x0+1000*(-b))), int(round(y0+1000*(a))))
-                    point2 = (int(round(x0-1000*(-b))), int(round(y0-1000*(a))))
-                    cv2.line(crop_lines_hough, point1, point2, (0, 0, 255), 2)
+            crop_lines_hough = np.zeros((height, width, 3), dtype=np.uint8)
+            for (rho, theta) in crop_line_data_1:
+                
+                a = math.cos(theta)
+                b = math.sin(theta)
+                x0 = a*rho
+                y0 = b*rho
+                point1 = (int(round(x0+1000*(-b))), int(round(y0+1000*(a))))
+                point2 = (int(round(x0-1000*(-b))), int(round(y0-1000*(a))))
+                cv2.line(crop_lines_hough, point1, point2, (0, 0, 255), 2)
                     
                     
                 
