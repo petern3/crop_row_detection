@@ -1,9 +1,6 @@
 crop_row_detection
 ==================
 
-Peter Nicholls
-
-
 A useful tool for agricultural robot developers to have is the ability for the
 robot to be able to detect crop rows. There have been many methods developed
 for this purpose, but this repository contains a real-time algorithm that works
